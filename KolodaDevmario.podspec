@@ -1,7 +1,7 @@
 
 
 Pod::Spec.new do |s|
-s.name             = "Koloda"
+s.name             = "KolodaDevmario"
 s.version          = "2.0.10"
 s.summary          = "KolodaView is a class designed to simplify the implementation of Tinder like cards on iOS. "
 
@@ -17,5 +17,5 @@ s.requires_arc = true
 s.source_files = 'Pod/Classes/**/*'
 
 s.frameworks = 'UIKit'
-s.dependency 'pop', :git => 'https://github.com/devmario/pop.git'
+s.dependency 'popDevmario', :git => 'https://github.com/devmario/pop.git'
 end
