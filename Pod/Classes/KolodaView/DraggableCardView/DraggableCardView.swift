@@ -213,6 +213,7 @@ public class DraggableCardView: UIView {
             transform = CATransform3DRotate(transform, rotationAngle, 0, 0, 1)
             transform = CATransform3DTranslate(transform, dragDistance.x, dragDistance.y, 0)
             layer.transform = transform
+            layer.rasterizationScale = 2.0;
             
             updateOverlayWithFinishPercent(dragDistance.x / CGRectGetWidth(frame))
             //100% - for proportion
