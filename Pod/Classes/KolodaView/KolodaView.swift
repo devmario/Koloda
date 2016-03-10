@@ -88,6 +88,7 @@ public extension KolodaViewDelegate {
 }
 
 public class KolodaView: UIView, DraggableCardDelegate {
+    public var interactionFrame:CGRect = CGRectZero
     
     public weak var dataSource: KolodaViewDataSource? {
         didSet {
@@ -167,6 +168,7 @@ public class KolodaView: UIView, DraggableCardDelegate {
                 for index in 0..<countOfNeededCards {
                     let nextCardContentView = dataSource.koloda(self, viewForCardAtIndex: UInt(index+currentCardNumber))
                     let nextCardView = DraggableCardView(frame: frameForTopCard())
+                    nextCardView.koloda = self
                     
                     nextCardView.delegate = self
                     if shouldTransparentize {
@@ -204,14 +206,24 @@ public class KolodaView: UIView, DraggableCardDelegate {
         }
     }
     
+    override public func pointInside(point: CGPoint, withEvent event: UIEvent?) -> Bool {
+        if(CGRectEqualToRect(interactionFrame, CGRectZero)) {
+            return super.pointInside(point, withEvent: event)
+        } else {
+            return CGRectContainsPoint(interactionFrame, point)
+        }
+    }
+    
     //MARK: Frames
     public func frameForCardAtIndex(index: UInt) -> CGRect {
+        var cardFrame = self.frame
+        cardFrame.size.width -= 20
         let bottomOffset:CGFloat = 0
         let topOffset = backgroundCardsTopMargin * CGFloat(self.countOfVisibleCards - 1)
         let scalePercent = backgroundCardsScalePercent
-        let width = CGRectGetWidth(self.frame) * pow(scalePercent, CGFloat(index))
-        let xOffset = (CGRectGetWidth(self.frame) - width) / 2
-        let height = (CGRectGetHeight(self.frame) - bottomOffset - topOffset) * pow(scalePercent, CGFloat(index))
+        let width = CGRectGetWidth(cardFrame) * pow(scalePercent, CGFloat(index))
+        let xOffset = (CGRectGetWidth(cardFrame) - width) / 2
+        let height = (CGRectGetHeight(cardFrame) - bottomOffset - topOffset) * pow(scalePercent, CGFloat(index))
         let multiplier: CGFloat = index > 0 ? 1.0 : 0.0
         let previousCardFrame = index > 0 ? frameForCardAtIndex(max(index - 1, 0)) : CGRectZero
         let yOffset = (CGRectGetHeight(previousCardFrame) - height + previousCardFrame.origin.y + backgroundCardsTopMargin) * multiplier
@@ -408,6 +420,7 @@ public class KolodaView: UIView, DraggableCardDelegate {
                 let cardParameters = backgroundCardParametersForFrame(lastCardFrame)
 
                 let lastCardView = DraggableCardView(frame: cardParameters.frame)
+                lastCardView.koloda = self
                 
                 
                 let scale = cardParameters.scale
@@ -510,6 +523,7 @@ public class KolodaView: UIView, DraggableCardDelegate {
                 let firstCardContentView = dataSource.koloda(self, viewForCardAtIndex: UInt(currentCardNumber))
                 let firstCardOverlayView = dataSource.koloda(self, viewForCardOverlayAtIndex: UInt(currentCardNumber))
                 let firstCardView = DraggableCardView()
+                firstCardView.koloda = self
                 
                 if shouldTransparentize {
                     firstCardView.alpha = alphaValueTransparent
@@ -561,6 +575,7 @@ public class KolodaView: UIView, DraggableCardDelegate {
             
             for index in startIndex...endIndex {
                 let nextCardView = DraggableCardView(frame: frameForCardAtIndex(UInt(index)))
+                nextCardView.koloda = self
                 
                 if shouldTransparentize {
                     nextCardView.alpha = alphaValueSemiTransparent

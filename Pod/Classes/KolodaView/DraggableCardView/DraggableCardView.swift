@@ -31,7 +31,7 @@ private let cardResetAnimationKey = "resetPositionAnimation"
 private let cardResetAnimationDuration: NSTimeInterval = 0.2
 
 public class DraggableCardView: UIView {
-    
+    public var koloda:KolodaView?
     weak var delegate: DraggableCardDelegate?
     
     private var overlayView: OverlayView?
@@ -175,6 +175,18 @@ public class DraggableCardView: UIView {
                 constant: 0)
             
             addConstraints([width,height,top,leading])
+        }
+    }
+    
+    override public func pointInside(point: CGPoint, withEvent event: UIEvent?) -> Bool {
+        if let koloda = self.koloda {
+            if CGRectEqualToRect(CGRectZero, koloda.interactionFrame) {
+                return super.pointInside(point, withEvent: event)
+            } else {
+                return CGRectContainsPoint(koloda.interactionFrame, point)
+            }
+        } else {
+            return super.pointInside(point, withEvent: event)
         }
     }
     
