@@ -17,14 +17,14 @@ public enum SwipeResultDirection {
 
 //Default values
 private let defaultCountOfVisibleCards = 3
-private let backgroundCardsTopMargin: CGFloat = 4.0
-private let backgroundCardsScalePercent: CGFloat = 0.99
-private let backgroundCardsLeftMargin: CGFloat = 8.0
+private let backgroundCardsTopMargin: CGFloat = 7
+private let backgroundCardsScalePercent: CGFloat = 0.97
+private let backgroundCardsLeftMargin: CGFloat = 7
 private let backgroundCardFrameAnimationDuration: NSTimeInterval = 0.2
 
 //Opacity values
 private let defaultAlphaValueOpaque: CGFloat = 1.0
-private let defaultAlphaValueTransparent: CGFloat = 0.0
+private let defaultAlphaValueTransparent: CGFloat = 1.0
 private let defaultAlphaValueSemiTransparent: CGFloat = 1.0
 
 //Animations constants
@@ -216,13 +216,12 @@ public class KolodaView: UIView, DraggableCardDelegate {
     
     //MARK: Frames
     public func frameForCardAtIndex(index: UInt) -> CGRect {
-        var cardFrame = self.frame
         let bottomOffset:CGFloat = 0
         let topOffset = backgroundCardsTopMargin * CGFloat(self.countOfVisibleCards - 1)
         let scalePercent = backgroundCardsScalePercent
-        let width = CGRectGetWidth(cardFrame) * pow(scalePercent, CGFloat(index))
-        let xOffset = (CGRectGetWidth(cardFrame) - width) / 2
-        let height = (CGRectGetHeight(cardFrame) - bottomOffset - topOffset) * pow(scalePercent, CGFloat(index))
+        let width = CGRectGetWidth(self.frame) * pow(scalePercent, CGFloat(index))
+        let xOffset = (CGRectGetWidth(self.frame) - width) / 2
+        let height = (CGRectGetHeight(self.frame) - bottomOffset - topOffset) * pow(scalePercent, CGFloat(index))
         let multiplier: CGFloat = index > 0 ? 1.0 : 0.0
         let previousCardFrame = index > 0 ? frameForCardAtIndex(max(index - 1, 0)) : CGRectZero
         let yOffset = (CGRectGetHeight(previousCardFrame) - height + previousCardFrame.origin.y + backgroundCardsTopMargin) * multiplier
@@ -316,21 +315,31 @@ public class KolodaView: UIView, DraggableCardDelegate {
     }
     
     func applyRevertAnimation(card: DraggableCardView, complete: (() -> Void)? = nil) {
+        
         animating = true
         
-        let firstCardAppearAnimation = POPBasicAnimation(propertyNamed: kPOPViewAlpha)
+        let resetPositionAnimation = POPSpringAnimation(propertyNamed: kPOPLayerTranslationXY)
         
-        firstCardAppearAnimation.toValue = NSNumber(float: Float(revertCardAnimationToValue))
-        firstCardAppearAnimation.fromValue =  NSNumber(float: Float(revertCardAnimationFromValue))
-        firstCardAppearAnimation.duration = revertCardAnimationDuration
-        firstCardAppearAnimation.completionBlock = {
+        let randVarX = arc4random() % 3
+        var randVarY = arc4random() % 3
+        if randVarX == 0 && randVarY == 0 {
+            randVarY = arc4random() % 2 + 1
+        }
+        let x = randVarX == 0 ? 0 : (randVarX == 1 ? -UIScreen.mainScreen().bounds.width : UIScreen.mainScreen().bounds.width)
+        let y = randVarY == 0 ? 0 : (randVarY == 1 ? -UIScreen.mainScreen().bounds.height : UIScreen.mainScreen().bounds.height)
+        resetPositionAnimation.fromValue = NSValue(CGPoint: CGPoint(x: x, y: y))
+        resetPositionAnimation.toValue = NSValue(CGPoint: CGPointZero)
+        resetPositionAnimation.dynamicsMass = 2
+        resetPositionAnimation.completionBlock = {
             (_, _) in
-            
             self.animating = false
+            card.layer.transform = CATransform3DIdentity
             complete?()
         }
         
-        card.pop_addAnimation(firstCardAppearAnimation, forKey: revertCardAnimationName)
+        card.layer.pop_addAnimation(resetPositionAnimation, forKey: "resetPositionAnimation")
+        
+        animating = true
     }
     
     //MARK: DraggableCardDelegate
@@ -510,8 +519,16 @@ public class KolodaView: UIView, DraggableCardDelegate {
                 
                 if let lastCard = visibleCards.last {
                     
-                    lastCard.removeFromSuperview()
-                    visibleCards.removeLast()
+                    let anim = POPBasicAnimation(propertyNamed: kPOPLayerScaleXY)
+                    anim.fromValue = NSValue(CGSize:CGSizeMake(lastCard.transform.a, lastCard.transform.d))
+                    anim.toValue = NSValue(CGSize:CGSizeMake(lastCard.transform.a * 0.92, lastCard.transform.d * 0.92))
+                    anim.duration = 0.6
+                    anim.completionBlock = {
+                        (_, _) in
+                        lastCard.removeFromSuperview()
+                        self.visibleCards.removeLast()
+                    }
+                    lastCard.layer.pop_addAnimation(anim, forKey: "lastCard")
                 }
             }
             

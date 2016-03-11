@@ -21,8 +21,8 @@ protocol DraggableCardDelegate: class {
 //Drag animation constants
 private let rotationMax: CGFloat = 1.0
 private let defaultRotationAngle = CGFloat(M_PI) / 10.0
-private let scaleMin: CGFloat = 0.8
-public let cardSwipeActionAnimationDuration: NSTimeInterval  = 0.4
+private let scaleMin: CGFloat = 1.0
+public let cardSwipeActionAnimationDuration: NSTimeInterval  = 1.0
 
 //Reset animation constants
 private let cardResetAnimationSpringBounciness: CGFloat = 10.0
@@ -67,13 +67,13 @@ public class DraggableCardView: UIView {
     }
     
     deinit {
-        removeGestureRecognizer(panGestureRecognizer)
+//        removeGestureRecognizer(panGestureRecognizer)
         removeGestureRecognizer(tapGestureRecognizer)
     }
     
     private func setup() {
-        panGestureRecognizer = UIPanGestureRecognizer(target: self, action: Selector("panGestureRecognized:"))
-        addGestureRecognizer(panGestureRecognizer)
+//        panGestureRecognizer = UIPanGestureRecognizer(target: self, action: Selector("panGestureRecognized:"))
+//        addGestureRecognizer(panGestureRecognizer)
         tapGestureRecognizer = UITapGestureRecognizer(target: self, action: Selector("tapRecognized:"))
         addGestureRecognizer(tapGestureRecognizer)
     }
@@ -190,8 +190,65 @@ public class DraggableCardView: UIView {
         }
     }
     
+    var prelocation:CGPoint = CGPointZero
+    
+    override public func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
+        if let touch = touches.first {
+            let touchLocation = touch.locationInView(self.koloda)
+            let newAnchorPoint = CGPointMake(touchLocation.x / bounds.width, touchLocation.y / bounds.height)
+            let oldPosition = CGPoint(x: bounds.size.width * layer.anchorPoint.x, y: bounds.size.height * layer.anchorPoint.y)
+            let newPosition = CGPoint(x: bounds.size.width * newAnchorPoint.x, y: bounds.size.height * newAnchorPoint.y)
+            layer.anchorPoint = newAnchorPoint
+            layer.position = CGPoint(x: layer.position.x - oldPosition.x + newPosition.x, y: layer.position.y - oldPosition.y + newPosition.y)
+            removeAnimations()
+            
+            dragBegin = true
+            
+            animationDirection = touchLocation.y >= frame.size.height / 2 ? -1.0 : 1.0
+            
+            layer.shouldRasterize = true
+            layer.rasterizationScale = 2
+            
+            prelocation = touchLocation
+        }
+    }
+    
+    override public func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?) {
+        if let touch = touches.first {
+            let touchLocation = touch.locationInView(self.koloda)
+            dragDistance = CGPointMake(touchLocation.x - prelocation.x , touchLocation.y - prelocation.y)
+            let rotationStrength = min(dragDistance.x / CGRectGetWidth(frame), rotationMax)
+            let rotationAngle = animationDirection * defaultRotationAngle * rotationStrength
+            let scaleStrength = 1 - ((1 - scaleMin) * fabs(rotationStrength))
+            let scale = max(scaleStrength, scaleMin)
+            
+            var transform = CATransform3DIdentity
+            transform = CATransform3DScale(transform, scale, scale, 1)
+            transform = CATransform3DRotate(transform, rotationAngle, 0, 0, 1)
+            transform = CATransform3DTranslate(transform, dragDistance.x, dragDistance.y, 0)
+            layer.transform = transform
+            
+            updateOverlayWithFinishPercent(dragDistance.x / CGRectGetWidth(frame))
+            //100% - for proportion
+            delegate?.card(self, wasDraggedWithFinishPercent: min(fabs(dragDistance.x * 100 / CGRectGetWidth(frame)), 100), inDirection: dragDirection)
+        }
+    }
+    
+    override public func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?) {
+        swipeMadeAction()
+        
+        layer.shouldRasterize = false
+    }
+    
+    public override func touchesCancelled(touches: Set<UITouch>?, withEvent event: UIEvent?) {
+        swipeMadeAction()
+        
+        layer.shouldRasterize = false
+    }
+    
     //MARK: GestureRecognizers
     func panGestureRecognized(gestureRecognizer: UIPanGestureRecognizer) {
+        return
         dragDistance = gestureRecognizer.translationInView(self)
         
         let touchLocation = gestureRecognizer.locationInView(self)
@@ -212,6 +269,7 @@ public class DraggableCardView: UIView {
             animationDirection = touchLocation.y >= frame.size.height / 2 ? -1.0 : 1.0
             
             layer.shouldRasterize = true
+            layer.rasterizationScale = 2
             
             break
         case .Changed:
@@ -225,7 +283,6 @@ public class DraggableCardView: UIView {
             transform = CATransform3DRotate(transform, rotationAngle, 0, 0, 1)
             transform = CATransform3DTranslate(transform, dragDistance.x, dragDistance.y, 0)
             layer.transform = transform
-            layer.rasterizationScale = 2.0;
             
             updateOverlayWithFinishPercent(dragDistance.x / CGRectGetWidth(frame))
             //100% - for proportion
@@ -288,7 +345,7 @@ public class DraggableCardView: UIView {
         layer.pop_addAnimation(translationAnimation, forKey: "swipeTranslationAnimation")
     }
     
-    private func resetViewPositionAndTransformations() {
+    public func resetViewPositionAndTransformations() {
         delegate?.card(cardWasReset: self)
         
         removeAnimations()
