@@ -320,13 +320,18 @@ public class KolodaView: UIView, DraggableCardDelegate {
         
         let resetPositionAnimation = POPSpringAnimation(propertyNamed: kPOPLayerTranslationXY)
         
-        let randVarX = arc4random() % 3
-        var randVarY = arc4random() % 3
-        if randVarX == 0 && randVarY == 0 {
-            randVarY = arc4random() % 2 + 1
-        }
-        let x = randVarX == 0 ? 0 : (randVarX == 1 ? -UIScreen.mainScreen().bounds.width : UIScreen.mainScreen().bounds.width)
-        let y = randVarY == 0 ? 0 : (randVarY == 1 ? -UIScreen.mainScreen().bounds.height : UIScreen.mainScreen().bounds.height)
+//        let randVarX = arc4random() % 3
+//        var randVarY = arc4random() % 3
+//        if randVarX == 0 && randVarY == 0 {
+//            randVarY = arc4random() % 2 + 1
+//        }
+//        let x = randVarX == 0 ? 0 : (randVarX == 1 ? -UIScreen.mainScreen().bounds.width : UIScreen.mainScreen().bounds.width)
+//        let y = randVarY == 0 ? 0 : (randVarY == 1 ? -UIScreen.mainScreen().bounds.height : UIScreen.mainScreen().bounds.height)
+        
+        let x = UIScreen.mainScreen().bounds.width
+        let y = -UIScreen.mainScreen().bounds.height
+        card.layer.transform = CATransform3DTranslate(CATransform3DIdentity, x, y, 0)
+        
         resetPositionAnimation.fromValue = NSValue(CGPoint: CGPoint(x: x, y: y))
         resetPositionAnimation.toValue = NSValue(CGPoint: CGPointZero)
         resetPositionAnimation.dynamicsMass = 2
@@ -338,8 +343,6 @@ public class KolodaView: UIView, DraggableCardDelegate {
         }
         
         card.layer.pop_addAnimation(resetPositionAnimation, forKey: "resetPositionAnimation")
-        
-        animating = true
     }
     
     //MARK: DraggableCardDelegate
@@ -518,7 +521,6 @@ public class KolodaView: UIView, DraggableCardDelegate {
             if countOfCards - currentCardNumber >= countOfVisibleCards {
                 
                 if let lastCard = visibleCards.last {
-                    
                     let anim = POPBasicAnimation(propertyNamed: kPOPLayerScaleXY)
                     anim.fromValue = NSValue(CGSize:CGSizeMake(lastCard.transform.a, lastCard.transform.d))
                     anim.toValue = NSValue(CGSize:CGSizeMake(lastCard.transform.a * 0.92, lastCard.transform.d * 0.92))
